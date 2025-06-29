@@ -11,7 +11,7 @@ DataGrip-advanced SQL IDE by JetBrains
 
  # 2. Connect to PostgreSQL via DataGrip
 Open DataGrip.
-Go to File → New → Data Source → PostgreSQL.
+Go to File-New-Data Source-PostgreSQL.
 Enter the connection details:
 Host: localhost (or your database server IP)
 Port: 5432 (default)
