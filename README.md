@@ -41,7 +41,7 @@ INSERT INTO clients (client_id, connected_branch_id, connect_date) VALUES (1, 10
 You can insert as many rows as needed, either individually or in bulk using comma-separated value groups.
 
 # 5. Run SQL Queries
-Now you're ready to run SQL queries for analysis — filtering, grouping, aggregation, etc.
+Now you're ready to run SQL queries for analysis-filtering, grouping, aggregation, etc.
 Example:
 SELECT
   b.city,
