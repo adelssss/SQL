@@ -47,11 +47,11 @@ SELECT
   b.city,
   SUM(so.revenue) AS суммарная_выручка
 FROM service_orders so
-JOIN clients c ON so.client_id = c.client_id
-JOIN branches b ON c.connected_branch_id = b.branch_id
-WHERE so.status = 'завершён'
+JOIN clients c ON so.client_id=c.client_id
+JOIN branches b ON c.connected_branch_id=b.branch_id
+WHERE so.status='завершён'
 GROUP BY b.city
-HAVING SUM(so.revenue) > 50000
+HAVING SUM(so.revenue)>50000
 ORDER BY суммарная_выручка DESC;
 
 You can write and execute all queries in DataGrip’s editor.
