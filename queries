@@ -1,0 +1,216 @@
+--Вывести классификацию филиалов по количеству подключённых клиентов
+SELECT
+  b.city,
+  COUNT(c.client_id) AS количество_клиентов,
+  CASE
+    WHEN COUNT(c.client_id)>10 THEN 'Крупный филиал'
+    WHEN COUNT(c.client_id) BETWEEN 5 AND 10 THEN 'Средний филиал'
+    ELSE 'Маленький филиал'
+  END AS категория
+FROM clients c
+JOIN branches b ON c.connected_branch_id = b.branch_id
+GROUP BY b.city
+ORDER BY количество_клиентов DESC
+LIMIT 10;
+
+
+--Вывести филиалЫ с наибольшей выручкой по доходу от завершённых заказов
+SELECT
+  b.city,
+  SUM(so.revenue) AS суммарная_выручка
+FROM service_orders so
+JOIN clients c ON so.client_id=c.client_id
+JOIN branches b ON c.connected_branch_id=b.branch_id
+WHERE so.status='завершён'
+GROUP BY b.city
+HAVING SUM(so.revenue)>50000
+ORDER BY суммарная_выручка DESC;
+
+
+
+--Определить Топ-3 самых популярных услуг по количеству заказов
+SELECT
+  product_name,
+  COUNT(*) AS количество_заказов,
+  CASE
+    WHEN COUNT(*)>30 THEN 'Хит продаж'
+    WHEN COUNT(*)>10 THEN 'Популярный'
+    ELSE 'Редкий'
+  END AS статус_услуги
+FROM service_orders
+GROUP BY product_name
+ORDER BY количество_заказов DESC
+LIMIT 3;
+
+
+
+--Вывести список активных клиентов с более чем 2 заказами и суммой заказов более 10000
+SELECT
+  c.client_id,
+  COUNT(so.order_id) AS количество_заказов,
+  SUM(so.revenue) AS общая_сумма,
+  b.city AS город
+FROM service_orders so
+JOIN clients c ON so.client_id=c.client_id
+JOIN branches b ON c.connected_branch_id=b.branch_id
+GROUP BY c.client_id, b.city
+HAVING COUNT(so.order_id)>2 AND SUM(so.revenue)>10000
+ORDER BY общая_сумма DESC;
+
+
+
+--Вывести Топ клиентов по завершению этапов подключения
+SELECT *
+FROM (
+  SELECT
+    c.client_id,
+    COUNT(s.step_id) AS шагов,
+    MAX(s.step_date) AS последний_шаг
+  FROM client_onboarding_steps s
+  JOIN clients c ON s.client_id=c.client_id
+  GROUP BY c.client_id
+) client_steps
+WHERE шагов>=3
+ORDER BY шагов DESC
+LIMIT 5;
+
+
+
+--Определить Топ-5 городов по числу новых подключений за 2024 год
+SELECT
+  b.city,
+  COUNT(c.client_id) AS подключения_в_2024
+FROM clients c
+JOIN branches b ON c.connected_branch_id=b.branch_id
+WHERE c.connect_date BETWEEN '2024-01-01' AND '2024-12-31'
+GROUP BY b.city
+HAVING COUNT(c.client_id)>2
+ORDER BY подключения_в_2024 DESC
+LIMIT 6;
+
+
+
+--Сегментировать клиентов по объёму заказов (Премиум/Обычный)
+SELECT
+  c.client_id,
+  SUM(so.revenue) AS суммарная_выручка,
+  CASE
+    WHEN SUM(so.revenue)>30000 THEN 'Премиум'
+    ELSE 'Обычный'
+  END AS статус_клиента
+FROM service_orders so
+JOIN clients c ON so.client_id=c.client_id
+GROUP BY c.client_id
+ORDER BY суммарная_выручка DESC;
+
+
+
+
+
+--Сформировать рейтинг филиалов по количеству клиентов и заказов
+SELECT
+  b.city,
+  COUNT(DISTINCT c.client_id) AS количество_клиентов,
+  COUNT(so.order_id) AS количество_заказов
+FROM branches b
+LEFT JOIN clients c ON c.connected_branch_id=b.branch_id
+LEFT JOIN service_orders so ON so.client_id=c.client_id
+GROUP BY b.city
+ORDER BY количество_заказов DESC;
+
+
+
+--Выявить Топ-5 клиентов по общей выручке
+SELECT
+  c.client_id,
+  b.city,
+  SUM(so.revenue) AS суммарная_выручка
+FROM clients c
+JOIN branches b ON c.connected_branch_id=b.branch_id
+LEFT JOIN service_orders so ON so.client_id=c.client_id
+GROUP BY c.client_id, b.city
+HAVING SUM(so.revenue) IS NOT NULL
+ORDER BY суммарная_выручка DESC
+LIMIT 5;
+
+
+
+
+
+
+--Показать статистику звонков по типам для каждого филиала
+SELECT
+  b.city,
+  cl.call_type,
+  COUNT(*) AS количество_звонков
+FROM client_calls_log cl
+JOIN clients c ON cl.user_id=c.client_id
+JOIN branches b ON c.connected_branch_id=b.branch_id
+GROUP BY b.city, cl.call_type
+ORDER BY b.city, cl.call_type;
+
+
+
+
+--Провести анализ активности клиентов: количество заказов, звонков и обращений
+SELECT
+  c.client_id,
+  COUNT(DISTINCT so.order_id) AS заказы,
+  COUNT(DISTINCT cl.call_id) AS звонки,
+  COUNT(DISTINCT sr.request_id) AS обращения
+FROM clients c
+LEFT JOIN service_orders so ON c.client_id=so.client_id
+LEFT JOIN client_calls_log cl ON c.client_id=cl.user_id
+LEFT JOIN support_requests sr ON c.client_id=sr.client_id
+GROUP BY c.client_id
+ORDER BY заказы DESC, звонки DESC;
+
+
+--Поиск неактивных клиентов без заказов
+SELECT COUNT(*) AS клиентов_без_заказов
+FROM clients c
+LEFT JOIN service_orders so ON c.client_id=so.client_id
+WHERE so.order_id IS NULL;
+
+
+
+-- Найти клиентов, которые подключились более 6 месяцев назад, но не сделали ни одного заказа.
+SELECT
+  c.client_id AS клиент,
+  b.city AS город,
+  c.connect_date AS дата_подключения
+FROM clients c
+JOIN branches b ON c.connected_branch_id=b.branch_id
+LEFT JOIN service_orders so ON c.client_id=so.client_id
+WHERE so.order_id IS NULL
+  AND c.connect_date<CURRENT_DATE - INTERVAL '6 months'
+ORDER BY дата_подключения;
+
+
+
+--Сводный отчёт по выручке и количеству заказов с выделением ТОП-городов.
+SELECT
+  city,
+  заказов,
+  выручка
+FROM (
+  SELECT
+    b.city,
+    COUNT(so.order_id) AS заказов,
+    SUM(so.revenue) AS выручка
+  FROM service_orders so
+  JOIN clients c ON so.client_id=c.client_id
+  JOIN branches b ON c.connected_branch_id=b.branch_id
+  GROUP BY b.city
+) данные_по_городам
+WHERE выручка>(
+  SELECT AVG(выручка_по_городам)
+  FROM (
+    SELECT SUM(so.revenue) AS выручка_по_городам
+    FROM service_orders so
+    JOIN clients c ON so.client_id=c.client_id
+    JOIN branches b ON c.connected_branch_id=b.branch_id
+    GROUP BY b.city
+  ) средние_показатели_по_городам
+)
+ORDER BY выручка DESC;
