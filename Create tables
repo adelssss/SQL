@@ -1,0 +1,41 @@
+CREATE TABLE branches (
+    branch_id SERIAL PRIMARY KEY,
+    city VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE clients (
+    client_id SERIAL PRIMARY KEY,
+    connected_branch_id INT REFERENCES branches(branch_id),
+    connect_date DATE NOT NULL
+);
+
+CREATE TABLE service_orders (
+    order_id SERIAL PRIMARY KEY,
+    client_id INT REFERENCES clients(client_id),
+    product_name VARCHAR(255) NOT NULL,
+    order_date DATE NOT NULL,
+    status VARCHAR(50) CHECK (status IN ('завершён', 'в процессе', 'отменён')),
+    revenue NUMERIC(12,2) NOT NULL
+);
+
+CREATE TABLE client_onboarding_steps (
+    step_id SERIAL PRIMARY KEY,
+    client_id INT REFERENCES clients(client_id),
+    step_name VARCHAR(100) NOT NULL,
+    step_date DATE NOT NULL
+);
+
+CREATE TABLE client_calls_log (
+    call_id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES clients(client_id),
+    call_type VARCHAR(20) CHECK (call_type IN ('входящий', 'исходящий')),
+    call_start TIMESTAMP NOT NULL,
+    call_end TIMESTAMP NOT NULL
+);
+
+CREATE TABLE support_requests (
+    request_id SERIAL PRIMARY KEY,
+    client_id INT REFERENCES clients(client_id),
+    create_time TIMESTAMP NOT NULL,
+    close_time TIMESTAMP
+);
